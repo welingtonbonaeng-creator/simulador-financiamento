@@ -311,6 +311,52 @@ tr:hover td{background:var(--card2)}
       <div id="entrySummary" class="entry-summary hidden"></div>
       <div id="imovelAlerts"></div>
 
+      <!-- PARCELAMENTO DA ENTRADA NA OBRA -->
+      <div style="height:1px;background:var(--borda);margin:16px -18px 16px"></div>
+      <div class="fg">
+        <label>Entrada parcelada durante a obra?</label>
+        <div class="tgl">
+          <button class="tgl-btn on" id="btnObraNao" onclick="setObra(false)">Não — à vista na entrega</button>
+          <button class="tgl-btn" id="btnObraSim" onclick="setObra(true)">Sim — parcelada na obra</button>
+        </div>
+      </div>
+
+      <div id="obraSection" class="hidden">
+        <div class="row fg">
+          <div>
+            <label>Prazo de obra (meses)</label>
+            <input type="text" inputmode="numeric" id="prazoObra" placeholder="24" oninput="fmtInput(this);atualizar()">
+          </div>
+          <div>
+            <div class="te-display" style="margin-top:16px">
+              <div class="te-lbl">Total pago na obra</div>
+              <div class="te-val" id="totalObraVal">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="row3 fg">
+          <div>
+            <label>Parcelas mensais (R$/mês)</label>
+            <div class="inp-w has-pfx"><span class="pfx">R$</span>
+              <input type="text" inputmode="numeric" id="parcelaMensalObra" placeholder="0" oninput="fmtInput(this);atualizar()">
+            </div>
+          </div>
+          <div>
+            <label>Reforços anuais (R$/ano)</label>
+            <div class="inp-w has-pfx"><span class="pfx">R$</span>
+              <input type="text" inputmode="numeric" id="reforcoAnual" placeholder="0" oninput="fmtInput(this);atualizar()">
+            </div>
+          </div>
+          <div>
+            <div class="te-display" style="margin-top:16px">
+              <div class="te-lbl">Saldo na entrega</div>
+              <div class="te-val" id="saldoEntregaVal">—</div>
+            </div>
+          </div>
+        </div>
+        <div id="obraResumo"></div>
+      </div>
+
     </div>
   </div>
 
@@ -333,14 +379,6 @@ tr:hover td{background:var(--card2)}
         </div>
       </div>
 
-      <div class="fg">
-        <label>Tipo de taxa</label>
-        <div class="tgl">
-          <button class="tgl-btn on" id="btnCom" onclick="setReductor(true)">Com redutor (nominal)</button>
-          <button class="tgl-btn" id="btnSem" onclick="setReductor(false)">Sem redutor (efetiva)</button>
-        </div>
-      </div>
-
       <div class="taxa-big">
         <div class="taxa-big-lbl">Taxa aplicada</div>
         <div>
@@ -359,6 +397,15 @@ tr:hover td{background:var(--card2)}
 
   <!-- RESULTADO -->
   <div id="secResultado" class="hidden">
+
+    <!-- FASE 1: OBRA -->
+    <div id="secFase1" class="sec hidden" style="margin-bottom:0;border-radius:12px 12px 0 0;border-bottom:none">
+      <div class="sec-title">Fase 1 — Durante a Obra</div>
+      <div class="sec-body" id="fase1Body"></div>
+    </div>
+    <div id="fase2Label" class="hidden" style="background:var(--card2);border:1px solid var(--borda);border-top:none;border-bottom:none;padding:8px 18px;font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;font-weight:700">
+      Fase 2 — Financiamento após a entrega
+    </div>
 
     <div class="tabs">
       <button class="tab on" id="tabSAC" onclick="switchTab('SAC')">
@@ -383,11 +430,19 @@ tr:hover td{background:var(--card2)}
 </div><!-- /main -->
 
 <script>
-let comReductor = true;
 let prazoDesejado = 0;
 let simData = null;
 let tabAtual = 'SAC';
-let prevPrazoEfetivo = 0; // rastreia mudança de prazo máximo para resetar slider
+let prevPrazoEfetivo = 0;
+let obraAtiva = false;
+
+function setObra(v) {
+  obraAtiva = v;
+  document.getElementById('btnObraNao').className = 'tgl-btn' + (!v ? ' on' : '');
+  document.getElementById('btnObraSim').className = 'tgl-btn' + (v ? ' on' : '');
+  document.getElementById('obraSection').classList.toggle('hidden', !v);
+  atualizar();
+}
 
 // Formata input de moeda: 305000 → 305.000
 function fmtInput(el) {
@@ -411,13 +466,6 @@ function getNum(id) {
 
 const HOJE = new Date(2026, 5, 5); // 05/06/2026
 const CAIXA_MAX_MESES = 966; // 80 anos e 6 meses em meses
-
-function setReductor(v) {
-  comReductor = v;
-  document.getElementById('btnCom').className = 'tgl-btn' + (v ? ' on' : '');
-  document.getElementById('btnSem').className = 'tgl-btn' + (!v ? ' on' : '');
-  atualizar();
-}
 
 function onSlider() {
   prazoDesejado = parseInt(document.getElementById('prazoSlider').value);
@@ -512,7 +560,7 @@ function atualizar() {
   let maxPelaRenda = Infinity;
   let prazoMaxRenda = 420;
   if (renda > 0 && faixa) {
-    const taxaCalc = comReductor ? faixa.taxa.com : faixa.taxa.sem;
+    const taxaCalc = faixa.taxa.com;
     const iMCalc = taxaCalc / 100 / 12;
     const margem = renda * 0.30;
     // Prazo máximo: menor entre o teto da faixa e o limite por idade
@@ -565,11 +613,12 @@ function atualizar() {
   const vfEl = document.getElementById('vfVal');
   const vfPctEl = document.getElementById('vfPct');
   if (valorImovel > 0) {
-    vfEl.textContent = moeda(maxBanco);
-    const pctSobrePreco = Math.min((maxBanco / valorImovel) * 100, 100).toFixed(0);
-    if (curyTrick) {
+    // Mostra o valor que REALMENTE será financiado (considera entrada informada)
+    vfEl.textContent = moeda(vf);
+    const pctSobrePreco = Math.min((vf / valorImovel) * 100, 100).toFixed(0);
+    if (curyTrick && vf >= valorImovel - 1) {
       vfEl.style.color = 'var(--green)';
-      vfPctEl.textContent = `100% do preço ✓ (LTV ok + renda ok)`;
+      vfPctEl.textContent = `100% do preço ✓ entrada zero`;
       vfPctEl.style.color = 'var(--green)';
     } else if (limitadoPorRenda) {
       vfEl.style.color = 'var(--orange)';
@@ -577,7 +626,7 @@ function atualizar() {
       vfPctEl.style.color = 'var(--orange)';
     } else {
       vfEl.style.color = 'var(--blue)';
-      vfPctEl.textContent = `${pctSobrePreco}% do preço (${Math.round(LTV*100)}% da avaliação)`;
+      vfPctEl.textContent = `${pctSobrePreco}% do preço financiado`;
       vfPctEl.style.color = 'var(--sub)';
     }
   } else {
@@ -690,7 +739,7 @@ function atualizar() {
   // --- TAXA APLICADA ---
   const taxaBig = document.getElementById('taxaBigNum');
   if (faixa) {
-    const taxa = comReductor ? faixa.taxa.com : faixa.taxa.sem;
+    const taxa = faixa.taxa.com;
     taxaBig.textContent = taxa.toFixed(2).replace('.', ',') + ' %';
   } else {
     taxaBig.textContent = '—';
@@ -699,7 +748,7 @@ function atualizar() {
   // --- CAPACIDADE PELA RENDA ---
   const capBox = document.getElementById('capBox');
   if (renda > 0 && faixa) {
-    const taxa = comReductor ? faixa.taxa.com : faixa.taxa.sem;
+    const taxa = faixa.taxa.com;
     const iM = taxa / 100 / 12;
     const margem = renda * 0.30;
     capBox.style.display = 'block';
@@ -719,6 +768,36 @@ function atualizar() {
     `;
   } else {
     capBox.style.display = 'none';
+  }
+
+  // --- OBRA ---
+  if (obraAtiva) {
+    const prazoObra = getNum('prazoObra') || 0;
+    const parcelaMensalObra = getNum('parcelaMensalObra') || 0;
+    const reforcoAnual = getNum('reforcoAnual') || 0;
+    const numReforcos = Math.floor(prazoObra / 12);
+    const totalMensais = parcelaMensalObra * prazoObra;
+    const totalReforcos = reforcoAnual * numReforcos;
+    const totalObra = totalMensais + totalReforcos;
+    const saldoEntrega = Math.max(0, entrada - totalObra);
+
+    document.getElementById('totalObraVal').textContent = prazoObra > 0 ? moeda(totalObra) : '—';
+    document.getElementById('saldoEntregaVal').textContent = prazoObra > 0 ? moeda(saldoEntrega) : '—';
+
+    const resumoEl = document.getElementById('obraResumo');
+    if (prazoObra > 0) {
+      const extraMsg = totalObra > entrada
+        ? `<div style="color:var(--red);font-size:12px;margin-top:6px">⚠ Total pago na obra (${moeda(totalObra)}) excede a entrada própria (${moeda(entrada)}). Revise os valores.</div>`
+        : '';
+      resumoEl.innerHTML = `<div class="entry-summary">
+        ${parcelaMensalObra > 0 ? `Mensais: ${moeda(parcelaMensalObra)} × ${prazoObra} meses = <b>${moeda(totalMensais)}</b><br>` : ''}
+        ${reforcoAnual > 0 ? `Reforços: ${moeda(reforcoAnual)} × ${numReforcos} ano${numReforcos !== 1?'s':''} = <b>${moeda(totalReforcos)}</b><br>` : ''}
+        <div class="fin">Saldo na entrega (ato): <span>${moeda(saldoEntrega)}</span>${fgts > 0 ? ` + FGTS <b style="color:var(--green)">${moeda(fgts)}</b>` : ''}</div>
+        ${extraMsg}
+      </div>`;
+    } else {
+      resumoEl.innerHTML = '';
+    }
   }
 }
 
@@ -742,7 +821,7 @@ function simular() {
 
   const faixa = detectFaixa(renda, valorImovel);
   const idade = calcIdade(dob);
-  const taxa = comReductor ? faixa.taxa.com : faixa.taxa.sem;
+  const taxa = faixa.taxa.com;
   const iM = taxa / 100 / 12;
   const totalEntrada = entrada + fgts;
 
@@ -778,20 +857,86 @@ function simular() {
   jurosPRICE = pmtPRICE * n - P;
   custoPRICE = valorImovel + jurosPRICE;
 
+  // Dados da obra (se ativa)
+  const prazoObra = obraAtiva ? (getNum('prazoObra') || 0) : 0;
+  const parcelaMensalObra = obraAtiva ? (getNum('parcelaMensalObra') || 0) : 0;
+  const reforcoAnual = obraAtiva ? (getNum('reforcoAnual') || 0) : 0;
+  const numReforcos = Math.floor(prazoObra / 12);
+  const totalMensaisObra = parcelaMensalObra * prazoObra;
+  const totalReforcosObra = reforcoAnual * numReforcos;
+  const totalObra = totalMensaisObra + totalReforcosObra;
+  const saldoEntregaObra = Math.max(0, entrada - totalObra);
+
   simData = {
     renda, valorImovel, entrada, fgts, totalEntrada, P,
     avaliacao, maxBanco, LTV,
     faixa, taxa, iM, n,
     amortSAC, p1SAC, pNSAC, jurosSAC, custoSAC,
-    pmtPRICE, jurosPRICE, custoPRICE
+    pmtPRICE, jurosPRICE, custoPRICE,
+    obraAtiva, prazoObra, parcelaMensalObra, reforcoAnual,
+    numReforcos, totalMensaisObra, totalReforcosObra, totalObra, saldoEntregaObra
   };
 
+  renderFase1(simData);
   renderSAC(simData);
   renderPRICE(simData);
   renderEvo(simData, tabAtual);
 
   document.getElementById('secResultado').classList.remove('hidden');
   setTimeout(() => document.getElementById('secResultado').scrollIntoView({behavior:'smooth',block:'start'}), 80);
+}
+
+function renderFase1(d) {
+  const secF1 = document.getElementById('secFase1');
+  const f2lbl = document.getElementById('fase2Label');
+
+  if (!d.obraAtiva || d.prazoObra <= 0) {
+    secF1.classList.add('hidden');
+    f2lbl.classList.add('hidden');
+    return;
+  }
+
+  secF1.classList.remove('hidden');
+  f2lbl.classList.remove('hidden');
+
+  const custoTotalCompleto = d.valorImovel + (d.jurosSAC); // referência SAC
+  const anos = Math.floor(d.prazoObra / 12);
+  const mesesResto = d.prazoObra % 12;
+  const prazoStr = (anos > 0 ? anos + ' ano' + (anos !== 1 ? 's' : '') : '') + (mesesResto > 0 ? (anos > 0 ? ' e ' : '') + mesesResto + ' mes' + (mesesResto !== 1 ? 'es' : '') : '');
+
+  document.getElementById('fase1Body').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--borda);border-radius:8px;overflow:hidden;margin-bottom:14px">
+      <div style="background:var(--card2);padding:12px 14px">
+        <div style="font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Prazo de obra</div>
+        <div style="font-size:16px;font-weight:800">${prazoStr}</div>
+      </div>
+      ${d.parcelaMensalObra > 0 ? `<div style="background:var(--card2);padding:12px 14px">
+        <div style="font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Parcela mensal</div>
+        <div style="font-size:16px;font-weight:800;color:var(--blue)">${moeda(d.parcelaMensalObra)}<span style="font-size:11px;font-weight:400;color:var(--sub)">/mês</span></div>
+        <div style="font-size:10px;color:var(--sub);margin-top:2px">Total: ${moeda(d.totalMensaisObra)}</div>
+      </div>` : '<div style="background:var(--card2);padding:12px 14px"><div style="font-size:10px;color:var(--sub)">Sem mensais</div></div>'}
+      ${d.reforcoAnual > 0 ? `<div style="background:var(--card2);padding:12px 14px">
+        <div style="font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Reforço anual</div>
+        <div style="font-size:16px;font-weight:800;color:var(--blue)">${moeda(d.reforcoAnual)}<span style="font-size:11px;font-weight:400;color:var(--sub)">/ano</span></div>
+        <div style="font-size:10px;color:var(--sub);margin-top:2px">${d.numReforcos} reforço${d.numReforcos !== 1?'s':''} · Total: ${moeda(d.totalReforcosObra)}</div>
+      </div>` : '<div style="background:var(--card2);padding:12px 14px"><div style="font-size:10px;color:var(--sub)">Sem reforços</div></div>'}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--borda);border-radius:8px;overflow:hidden">
+      <div style="background:var(--card2);padding:12px 14px">
+        <div style="font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Total pago na obra</div>
+        <div style="font-size:18px;font-weight:800;color:var(--orange)">${moeda(d.totalObra)}</div>
+      </div>
+      <div style="background:var(--card2);padding:12px 14px">
+        <div style="font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Saldo na entrega</div>
+        <div style="font-size:18px;font-weight:800;color:var(--blue)">${moeda(d.saldoEntregaObra)}</div>
+        ${d.fgts > 0 ? `<div style="font-size:10px;color:var(--green);margin-top:2px">+ FGTS ${moeda(d.fgts)} na assinatura</div>` : ''}
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--sub);margin-top:10px;line-height:1.6">
+      Após a entrega das chaves inicia o financiamento bancário (Fase 2 abaixo). O custo total inclui: obra ${moeda(d.totalObra)} + entrega ${moeda(d.saldoEntregaObra + d.fgts)} + financiamento.
+    </div>
+  `;
 }
 
 function buildResultGrid(d, tipo) {
