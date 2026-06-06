@@ -287,7 +287,7 @@ tr:hover td{background:var(--card2)}
 
       <div class="row3 fg">
         <div>
-          <label>Entrada própria (R$)</label>
+          <label>Ato — pagamento na assinatura (R$)</label>
           <div class="inp-w has-pfx">
             <span class="pfx">R$</span>
             <input type="text" inputmode="numeric" id="entradaPropria" placeholder="0" oninput="fmtInput(this);atualizar()">
@@ -454,6 +454,7 @@ let simData = null;
 let tabAtual = 'SAC';
 let prevPrazoEfetivo = 0;
 let obraAtiva = false;
+let _minEntrada = 0; // entrada total necessária — atualizada em atualizar()
 
 function setObra(v) {
   obraAtiva = v;
@@ -476,7 +477,8 @@ function calcPrazoObra() {
 }
 
 function sugerirParcela() {
-  const entrada = getNum('entradaPropria');
+  const ato = getNum('entradaPropria');
+  const fgts = getNum('fgts');
   const reforcoAnual = getNum('reforcoAnual') || 0;
   const prazoObra = calcPrazoObra();
   const maxReforcos = Math.floor(prazoObra / 12);
@@ -484,11 +486,12 @@ function sugerirParcela() {
   const numReforcos = qtdRaw > 0 ? Math.min(Math.round(qtdRaw), maxReforcos) : maxReforcos;
 
   if (prazoObra <= 0) { alert('Informe a data de entrega do empreendimento primeiro.'); return; }
-  if (entrada <= 0) { alert('Informe a entrada própria primeiro.'); return; }
+  if (_minEntrada <= 0) { alert('Preencha os dados do imóvel e renda primeiro.'); return; }
 
   const totalReforcos = reforcoAnual * numReforcos;
-  const saldoMensais = Math.max(0, entrada - totalReforcos);
-  const parcelaSugerida = Math.ceil(saldoMensais / prazoObra);
+  // Saldo = total necessário - ato já pago - FGTS na entrega - reforços anuais
+  const saldoMensais = Math.max(0, _minEntrada - ato - fgts - totalReforcos);
+  const parcelaSugerida = prazoObra > 0 ? Math.ceil(saldoMensais / prazoObra) : 0;
 
   const el = document.getElementById('parcelaMensalObra');
   el.value = parcelaSugerida > 0 ? parcelaSugerida.toLocaleString('pt-BR') : '0';
@@ -624,6 +627,7 @@ function atualizar() {
   const maxBanco = Math.min(maxPeloLTV, maxPelaRenda);
   const limitadoPorRenda = maxPelaRenda < maxPeloLTV;
   const minEntrada = Math.max(0, valorImovel - maxBanco);
+  _minEntrada = minEntrada; // salva globalmente para obra e sugerirParcela
 
   // Truque Cury só funciona se os DOIS limitantes permitem cobrir o preço inteiro
   const curyTrick = valorImovel > 0
@@ -852,19 +856,24 @@ function atualizar() {
 
     const resumoEl = document.getElementById('obraResumo');
     if (prazoObra > 0) {
-      const alertaExcesso = totalObra > entrada
-        ? `<div class="al al-r" style="margin-top:8px">⚠ Total na obra (${moeda(totalObra)}) excede a entrada própria (${moeda(entrada)}). Revise.</div>`
-        : '';
-      const saldoMensais = Math.max(0, entrada - totalReforcos);
-      const sugestaoMensal = prazoObra > 0 ? saldoMensais / prazoObra : 0;
+      // Base de cálculo: entrada total necessária (não o ato)
+      const entradaNecessaria = _minEntrada > 0 ? _minEntrada : Math.max(0, entrada);
+      const totalCoberto = entrada + fgts + totalObra; // ato + FGTS + obra
+      const faltando = Math.max(0, entradaNecessaria - totalCoberto);
+      const ok = faltando < 1;
+
+      const statusHtml = ok
+        ? `<div style="color:var(--green);font-weight:700;margin-top:6px">✓ Entrada totalmente coberta (${moeda(totalCoberto)} de ${moeda(entradaNecessaria)} necessários)</div>`
+        : `<div class="al al-y" style="margin-top:8px">⚠ Faltam <b>${moeda(faltando)}</b> para cobrir a entrada total necessária (${moeda(entradaNecessaria)}). Aumente o ato, FGTS, anuais ou mensais.</div>`;
 
       resumoEl.innerHTML = `<div class="entry-summary">
+        <b>Distribuição da entrada (${moeda(entradaNecessaria)} necessários):</b><br>
+        Ato (assinatura): <b>${moeda(entrada)}</b><br>
+        ${fgts > 0 ? `FGTS (na entrega): <b style="color:var(--green)">${moeda(fgts)}</b><br>` : ''}
         ${reforcoAnual > 0 ? `Reforços: ${moeda(reforcoAnual)} × ${numReforcos} = <b>${moeda(totalReforcos)}</b><br>` : ''}
-        ${parcelaMensalObra > 0 ? `Mensais: ${moeda(parcelaMensalObra)} × ${prazoObra} meses = <b>${moeda(totalMensais)}</b><br>` :
-          (entrada > 0 && reforcoAnual >= 0 ? `<span style="color:var(--sub)">Saldo para mensais: ${moeda(saldoMensais)} ÷ ${prazoObra} meses = <b>${moeda(sugestaoMensal)}/mês</b> sugerido</span><br>` : '')}
-        <div class="fin">Total pago na obra: <span>${moeda(totalObra)}</span></div>
-        <div style="margin-top:4px;font-size:12.5px">Saldo na entrega (ato): <b>${moeda(saldoEntrega)}</b>${fgts > 0 ? ` + FGTS <b style="color:var(--green)">${moeda(fgts)}</b>` : ''}</div>
-        ${alertaExcesso}
+        ${parcelaMensalObra > 0 ? `Mensais: ${moeda(parcelaMensalObra)} × ${prazoObra} meses = <b>${moeda(totalMensais)}</b><br>` : '<span style="color:var(--sub)">Mensais: — (use o botão para calcular)</span><br>'}
+        <div class="fin" style="margin-top:6px">Total coberto na obra+entrega: <span>${moeda(totalCoberto)}</span></div>
+        ${statusHtml}
       </div>`;
     } else {
       resumoEl.innerHTML = '';
