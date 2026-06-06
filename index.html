@@ -900,8 +900,15 @@ function atualizar() {
     const hintP = document.getElementById('hintParcelaMensal');
     const hintR = document.getElementById('hintReforco');
     if (hintP) {
-      hintP.textContent = renda > 0 ? `Máx: ${moeda(maxParcelaMensalObra)}/mês (30% da renda)` : '';
-      hintP.style.color = (parcelaMensalObra > maxParcelaMensalObra && parcelaMensalObra > 0) ? 'var(--red)' : 'var(--sub)';
+      const excedeParcela = parcelaMensalObra > maxParcelaMensalObra && parcelaMensalObra > 0;
+      if (parcelaMensalObra > 0 && prazoObra > 0) {
+        // Mostra: qtd de parcelas + total + limite
+        hintP.innerHTML = `<b>${prazoObra} parcelas</b> · Total: <b>${moeda(totalMensais)}</b>`
+          + (renda > 0 ? ` &nbsp;|&nbsp; Máx: ${moeda(maxParcelaMensalObra)}/mês` : '');
+      } else {
+        hintP.innerHTML = renda > 0 ? `Máx: ${moeda(maxParcelaMensalObra)}/mês (30% da renda)` : '';
+      }
+      hintP.style.color = excedeParcela ? 'var(--red)' : (parcelaMensalObra > 0 ? 'var(--blue)' : 'var(--sub)');
     }
     if (hintR) {
       hintR.textContent = renda > 0 ? `Máx: ${moeda(maxReforcoAnualObra)}/ano (1 renda mensal)` : '';
