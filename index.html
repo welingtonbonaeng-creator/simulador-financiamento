@@ -343,7 +343,7 @@ tr:hover td{background:var(--card2)}
           <div>
             <label>Valor do reforço anual (R$)</label>
             <div class="inp-w has-pfx"><span class="pfx">R$</span>
-              <input type="text" inputmode="numeric" id="reforcoAnual" placeholder="5.000" oninput="fmtInput(this);atualizar()">
+              <input type="text" inputmode="numeric" id="reforcoAnual" placeholder="5.000" oninput="inputReforco(this)">
             </div>
             <div id="hintReforco" style="font-size:10.5px;color:var(--sub);margin-top:4px"></div>
           </div>
@@ -364,7 +364,7 @@ tr:hover td{background:var(--card2)}
           <div>
             <label>Parcela mensal de obra (R$/mês)</label>
             <div class="inp-w has-pfx"><span class="pfx">R$</span>
-              <input type="text" inputmode="numeric" id="parcelaMensalObra" placeholder="deixe vazio para calcular" oninput="fmtInput(this);atualizar()">
+              <input type="text" inputmode="numeric" id="parcelaMensalObra" placeholder="deixe vazio para calcular" oninput="inputParcelaMensal(this)">
             </div>
             <div id="hintParcelaMensal" style="font-size:10.5px;color:var(--sub);margin-top:4px"></div>
           </div>
@@ -529,6 +529,31 @@ function fmtInput(el) {
 function getNum(id) {
   const v = document.getElementById(id).value.replace(/\./g, '').replace(/,/g, '.');
   return parseFloat(v) || 0;
+}
+
+// Reforço anual: teto = 1 renda mensal
+function inputReforco(el) {
+  fmtInput(el);
+  if (_renda > 0) {
+    const val = getNum('reforcoAnual');
+    if (val > _renda) {
+      el.value = Math.floor(_renda).toLocaleString('pt-BR');
+    }
+  }
+  atualizar();
+}
+
+// Parcela mensal de obra: teto = 30% da renda
+function inputParcelaMensal(el) {
+  fmtInput(el);
+  if (_renda > 0) {
+    const max = Math.floor(_renda * 0.30);
+    const val = getNum('parcelaMensalObra');
+    if (val > max) {
+      el.value = max.toLocaleString('pt-BR');
+    }
+  }
+  atualizar();
 }
 
 const HOJE = new Date(2026, 5, 5); // 05/06/2026
