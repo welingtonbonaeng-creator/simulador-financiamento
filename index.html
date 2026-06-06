@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador MCMV 2026</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;
+  --card:#161b2e;
+  --card2:#1e2538;
+  --card3:#252f48;
+  --borda:#2d3a52;
+  --txt:#e2e8f0;
+  --sub:#8892a4;
+  --blue:#58a6ff;
+  --blue2:#1d6fce;
+  --orange:#f0883e;
+  --green:#3fb950;
+  --red:#f85149;
+  --yellow:#d29922;
+  --yellow-bg:#2a1f05;
+  --green-bg:#0d2418;
+  --red-bg:#2a0a0a;
+  --blue-bg:#0d1f3a;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding-bottom:48px}
+
+/* HEADER */
+.hdr{background:var(--card);border-bottom:1px solid var(--borda);padding:16px 20px;position:sticky;top:0;z-index:20}
+.hdr-row{display:flex;align-items:center;gap:10px}
+.hdr h1{font-size:20px;font-weight:800;letter-spacing:-.5px}
+.hdr-badge{background:#0d2a5c;color:#58a6ff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid #1d4a8a;white-space:nowrap}
+.hdr-sub{font-size:11.5px;color:var(--sub);margin-top:5px}
+
+/* MAIN */
+.main{max-width:660px;margin:0 auto;padding:20px 14px}
+
+/* SECTION */
+.sec{background:var(--card);border:1px solid var(--borda);border-radius:12px;margin-bottom:14px;overflow:hidden}
+.sec-title{background:var(--card2);border-bottom:1px solid var(--borda);padding:11px 18px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--sub)}
+.sec-body{padding:18px}
+
+/* FORM */
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.fg{margin-bottom:13px}
+.fg:last-child{margin-bottom:0}
+label{display:block;font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.inp-w{position:relative}
+.pfx{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:13px;pointer-events:none}
+input[type=number],input[type=date],input[type=text]{
+  width:100%;background:var(--card2);border:1.5px solid var(--borda);border-radius:8px;
+  color:var(--txt);font-size:14px;font-family:inherit;outline:none;padding:10px 12px;
+  transition:border-color .15s;-webkit-appearance:none;appearance:none}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.has-pfx input{padding-left:30px}
+input:focus{border-color:var(--blue2)}
+input::placeholder{color:#3a465c}
+input[type=date]{color-scheme:dark}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.6) hue-rotate(180deg)}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:6px;background:var(--card3);
+  border-radius:3px;border:none;outline:none;cursor:pointer;padding:0}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;background:var(--blue2);
+  border-radius:50%;border:3px solid var(--blue);cursor:pointer}
+
+/* FAIXA BADGE */
+.fx-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:700;margin-bottom:8px}
+.fx1{background:#071e12;color:#3fb950;border:1px solid #1a5c2a}
+.fx2{background:#071627;color:#58a6ff;border:1px solid #1a4a8a}
+.fx3{background:#1e0e03;color:#f0883e;border:1px solid #6a3a10}
+.fx4{background:#1e0808;color:#f85149;border:1px solid #6a1a1a}
+.fxs{background:#120820;color:#c084fc;border:1px solid #5b2896}
+.fx-info{font-size:12px;color:var(--sub);line-height:1.7}
+.fx-info b{color:var(--blue)}
+.fx-idade{font-size:12px;color:var(--sub);float:right;margin-top:-20px}
+
+/* VF INLINE */
+.vf-row{display:flex;gap:12px;align-items:flex-start}
+.vf-input{flex:1}
+.vf-display{min-width:140px;text-align:right}
+.vf-lbl{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.vf-val{font-size:20px;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums}
+
+/* TOTAL ENTRADA */
+.te-display{background:var(--card2);border:1px solid var(--borda);border-radius:8px;padding:10px 12px}
+.te-lbl{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.te-val{font-size:14px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums}
+
+/* SUMMARY */
+.entry-summary{background:var(--card2);border:1px solid var(--borda);border-radius:8px;padding:12px 14px;font-size:12.5px;color:var(--sub);margin-top:12px;line-height:1.8}
+.entry-summary .fin{font-size:14px;font-weight:700;color:var(--txt);margin-top:4px}
+.entry-summary .fin span{color:var(--orange)}
+
+/* ALERTS */
+.al{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:8px;font-size:12.5px;line-height:1.5;margin-top:9px}
+.al-g{background:var(--green-bg);color:#4ade80;border:1px solid #1a5c2a}
+.al-y{background:var(--yellow-bg);color:#fde68a;border:1px solid #7a4a10}
+.al-b{background:var(--blue-bg);color:#93c5fd;border:1px solid #1e3f7a}
+.al-r{background:var(--red-bg);color:#fca5a5;border:1px solid #7a1a1a}
+
+/* PRAZO MAX DISPLAY */
+.pmax-wrap{text-align:center;margin-bottom:18px}
+.pmax-lbl{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.pmax-val{font-size:44px;font-weight:900;color:var(--blue);line-height:1;font-variant-numeric:tabular-nums}
+.pmax-sub{font-size:12px;color:var(--sub);margin-top:6px}
+
+/* PRAZO SLIDER ROW */
+.slider-row{display:flex;gap:12px;align-items:center;margin-top:6px}
+.slider-row input[type=range]{flex:1}
+.slider-val{min-width:110px;text-align:right;font-size:13px;font-weight:700;color:var(--blue)}
+
+/* TOGGLE */
+.tgl{display:flex;background:var(--card2);border:1px solid var(--borda);border-radius:8px;overflow:hidden}
+.tgl-btn{flex:1;padding:9px 8px;text-align:center;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--sub);border:none;background:transparent;font-family:inherit;transition:all .15s}
+.tgl-btn.on{background:var(--blue2);color:#fff}
+
+/* TAXA BIG */
+.taxa-big{text-align:center;margin-top:16px;padding:16px;background:var(--card2);border:1px solid var(--borda);border-radius:10px}
+.taxa-big-lbl{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.taxa-big-num{font-size:42px;font-weight:900;color:var(--orange);line-height:1;font-variant-numeric:tabular-nums}
+.taxa-big-unit{font-size:16px;color:var(--sub);margin-left:6px;font-weight:400}
+
+/* CAPACIDADE */
+.cap-box{background:var(--card2);border:1px solid var(--borda);border-radius:8px;padding:13px 15px;margin-top:14px}
+.cap-lbl{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.cap-row{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--borda)}
+.cap-row:last-of-type{border:none}
+.cap-key{color:var(--sub)}
+.cap-v{font-weight:700}
+.cv-blue{color:var(--blue)}
+.cv-orange{color:var(--orange)}
+.cv-green{color:var(--green)}
+.cv-red{color:var(--red)}
+
+/* BTN SIMULAR */
+.btn-sim{width:100%;padding:16px;background:var(--blue2);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:.3px;transition:background .15s,transform .1s;margin-bottom:16px;font-family:inherit}
+.btn-sim:hover{background:#1558a8}
+.btn-sim:active{transform:scale(.99)}
+
+/* TABS */
+.tabs{display:flex;background:var(--card2);border:1px solid var(--borda);border-bottom:none;border-radius:12px 12px 0 0;overflow:hidden}
+.tab{flex:1;padding:12px;text-align:center;font-size:13px;font-weight:700;cursor:pointer;color:var(--sub);border:none;background:transparent;font-family:inherit;transition:all .15s;line-height:1.3}
+.tab small{display:block;font-size:10px;font-weight:400;margin-top:2px;color:var(--sub)}
+.tab.on{background:var(--card);color:var(--blue);border-bottom:2px solid var(--blue2)}
+.tab-c{display:none}.tab-c.on{display:block}
+
+/* RESULT GRID */
+.rg{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--borda);border:1px solid var(--borda);border-top:none;border-radius:0 0 12px 12px}
+.rc{background:var(--card);padding:13px 14px}
+.rc.span2{grid-column:span 2}
+.rc.span4{grid-column:span 4;background:var(--card2);text-align:center}
+.rc.hl{background:var(--card3)}
+.rc-lbl{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.rc-val{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.rc-sub{font-size:10px;color:var(--sub);margin-top:2px}
+.rv-blue{color:var(--blue)}
+.rv-orange{color:var(--orange)}
+.rv-green{color:var(--green)}
+.rv-red{color:var(--red)}
+.rv-big{font-size:22px}
+
+/* EVOLUÇÃO */
+.evo-bar-legend{display:flex;gap:16px;margin-bottom:7px;font-size:12px}
+.evo-li{display:flex;align-items:center;gap:5px;color:var(--sub)}
+.evo-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.evo-track{height:12px;background:var(--card3);border-radius:6px;overflow:hidden;display:flex}
+.evo-amort{background:var(--blue2)}
+.evo-juros{background:var(--orange)}
+
+/* TABLE */
+.tbl-wrap{max-height:380px;overflow-y:auto;border:1px solid var(--borda);border-radius:9px;margin-top:14px}
+.tbl-wrap::-webkit-scrollbar{width:4px}
+.tbl-wrap::-webkit-scrollbar-track{background:var(--card2)}
+.tbl-wrap::-webkit-scrollbar-thumb{background:var(--borda);border-radius:2px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead{position:sticky;top:0;z-index:1}
+th{background:var(--card3);color:var(--sub);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:9px 12px;text-align:right}
+th:first-child{text-align:center}
+td{padding:7px 12px;text-align:right;border-bottom:1px solid var(--borda);font-variant-numeric:tabular-nums;color:var(--txt)}
+td:first-child{text-align:center;color:var(--sub)}
+tr:last-child td{border:none}
+tr:hover td{background:var(--card2)}
+.td-a{color:var(--blue)}
+.td-j{color:var(--orange)}
+
+/* DISCLAIMER */
+.disc{margin-top:12px;padding:10px 13px;background:var(--yellow-bg);border:1px solid #7a4a10;border-radius:8px;font-size:11.5px;color:#fde68a;display:flex;gap:8px;line-height:1.5}
+
+@media(max-width:500px){
+  .row{grid-template-columns:1fr}
+  .row3{grid-template-columns:1fr 1fr}
+  .rg{grid-template-columns:repeat(2,1fr)}
+  .rc.span4{grid-column:span 2}
+  .pmax-val{font-size:34px}
+  .taxa-big-num{font-size:32px}
+  .vf-row{flex-direction:column}
+  .vf-display{text-align:left;min-width:0}
+}
+
+.hidden{display:none!important}
+
+@media print{
+  body{background:#fff;color:#000}
+  .hdr{background:#003d72;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sec{background:#fff;border:1px solid #ddd}
+  .sec-title{background:#f5f5f5}
+  .btn-sim,.tgl,.slider-row{display:none}
+  input{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-row">
+    <h1>Simulador MCMV 2026</h1>
+    <span class="hdr-badge">Caixa Econômica Federal</span>
+  </div>
+  <div class="hdr-sub">Prazo calculado pela regra da Caixa: 80 anos e 6 meses menos a idade do cliente</div>
+</div>
+
+<div class="main">
+
+  <!-- PERFIL DO CLIENTE -->
+  <div class="sec">
+    <div class="sec-title">Perfil do Cliente</div>
+    <div class="sec-body">
+      <div class="row fg">
+        <div>
+          <label>Renda familiar bruta (R$)</label>
+          <div class="inp-w has-pfx">
+            <span class="pfx">R$</span>
+            <input type="text" inputmode="numeric" id="renda" placeholder="10.000" oninput="fmtInput(this);atualizar()">
+          </div>
+        </div>
+        <div>
+          <label>Data de nascimento</label>
+          <input type="date" id="dob" oninput="atualizar()">
+        </div>
+      </div>
+      <div id="fxInfo" class="hidden">
+        <div id="fxBadge" class="fx-badge"></div>
+        <span id="fxIdade" style="font-size:12px;color:var(--sub);float:right;margin-top:-28px"></span>
+        <div style="clear:both;height:4px"></div>
+        <div class="fx-info" id="fxTaxaInfo"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMÓVEL E COMPOSIÇÃO DA ENTRADA -->
+  <div class="sec">
+    <div class="sec-title">Imóvel e Composição da Entrada</div>
+    <div class="sec-body">
+
+      <div class="fg">
+        <div class="vf-row">
+          <div class="vf-input">
+            <label>Valor de venda — Cury (R$)</label>
+            <div class="inp-w has-pfx">
+              <span class="pfx">R$</span>
+              <input type="text" inputmode="numeric" id="valorImovel" placeholder="400.000" oninput="fmtInput(this);atualizar()">
+            </div>
+          </div>
+          <div class="vf-display">
+            <div class="vf-lbl">Banco financia até</div>
+            <div class="vf-val" id="vfVal">—</div>
+            <div style="font-size:10px;color:var(--sub);margin-top:3px" id="vfPct"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Valor de avaliação — Caixa (R$) <span style="font-weight:400;text-transform:none;font-size:10px">opcional · padrão: +10% do preço</span></label>
+        <div class="inp-w has-pfx">
+          <span class="pfx">R$</span>
+          <input type="text" inputmode="numeric" id="valorAvaliacao" placeholder="Deixe vazio = estimativa automática (+10%)" oninput="fmtInput(this);atualizar()">
+        </div>
+      </div>
+
+      <div class="sec-title" style="margin:0 -18px 14px;border-radius:0">Composição da Entrada</div>
+
+      <div class="row3 fg">
+        <div>
+          <label>Entrada própria (R$)</label>
+          <div class="inp-w has-pfx">
+            <span class="pfx">R$</span>
+            <input type="text" inputmode="numeric" id="entradaPropria" placeholder="0" oninput="fmtInput(this);atualizar()">
+          </div>
+        </div>
+        <div>
+          <label>FGTS (R$)</label>
+          <div class="inp-w has-pfx">
+            <span class="pfx">R$</span>
+            <input type="text" inputmode="numeric" id="fgts" placeholder="0" oninput="fmtInput(this);atualizar()">
+          </div>
+        </div>
+        <div>
+          <div class="te-display" style="margin-top:16px">
+            <div class="te-lbl">Total de entrada</div>
+            <div class="te-val" id="totalEntradaVal">R$ 0</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="entrySummary" class="entry-summary hidden"></div>
+      <div id="imovelAlerts"></div>
+
+    </div>
+  </div>
+
+  <!-- PRAZO E TAXA -->
+  <div class="sec">
+    <div class="sec-title">Prazo e Taxa</div>
+    <div class="sec-body">
+
+      <div class="pmax-wrap">
+        <div class="pmax-lbl">Prazo máximo permitido</div>
+        <div class="pmax-val" id="pmaxVal">—</div>
+        <div class="pmax-sub" id="pmaxSub">Informe a data de nascimento</div>
+      </div>
+
+      <div class="fg">
+        <label>Prazo desejado</label>
+        <div class="slider-row">
+          <input type="range" id="prazoSlider" min="12" max="420" step="12" oninput="onSlider()">
+          <div class="slider-val" id="prazoSliderLbl">—</div>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>Tipo de taxa</label>
+        <div class="tgl">
+          <button class="tgl-btn on" id="btnCom" onclick="setReductor(true)">Com redutor (nominal)</button>
+          <button class="tgl-btn" id="btnSem" onclick="setReductor(false)">Sem redutor (efetiva)</button>
+        </div>
+      </div>
+
+      <div class="taxa-big">
+        <div class="taxa-big-lbl">Taxa aplicada</div>
+        <div>
+          <span class="taxa-big-num" id="taxaBigNum">—</span>
+          <span class="taxa-big-unit">ao ano</span>
+        </div>
+      </div>
+
+      <div class="cap-box" id="capBox" style="display:none"></div>
+
+    </div>
+  </div>
+
+  <!-- BOTÃO -->
+  <button class="btn-sim" onclick="simular()">Simular Financiamento</button>
+
+  <!-- RESULTADO -->
+  <div id="secResultado" class="hidden">
+
+    <div class="tabs">
+      <button class="tab on" id="tabSAC" onclick="switchTab('SAC')">
+        SAC<small>parcela decrescente</small>
+      </button>
+      <button class="tab" id="tabPRICE" onclick="switchTab('PRICE')">
+        PRICE<small>parcela fixa</small>
+      </button>
+    </div>
+
+    <div id="cSAC" class="tab-c on"></div>
+    <div id="cPRICE" class="tab-c"></div>
+
+    <!-- Evolução -->
+    <div class="sec" style="border-radius:12px;margin-top:14px">
+      <div class="sec-title">Evolução do Financiamento</div>
+      <div class="sec-body" id="evoBody"></div>
+    </div>
+
+  </div>
+
+</div><!-- /main -->
+
+<script>
+let comReductor = true;
+let prazoDesejado = 0;
+let simData = null;
+let tabAtual = 'SAC';
+let prevPrazoEfetivo = 0; // rastreia mudança de prazo máximo para resetar slider
+
+// Formata input de moeda: 305000 → 305.000
+function fmtInput(el) {
+  const pos = el.selectionStart;
+  const antes = el.value.length;
+  const digits = el.value.replace(/\D/g, '');
+  if (digits === '') { el.value = ''; return; }
+  const num = parseInt(digits, 10);
+  el.value = num.toLocaleString('pt-BR');
+  // Mantém cursor no final se o usuário estava no final, senão ajusta
+  const depois = el.value.length;
+  const novaPos = Math.max(0, pos + (depois - antes));
+  try { el.setSelectionRange(novaPos, novaPos); } catch(e) {}
+}
+
+// Lê valor numérico de input formatado (ex: "305.000" → 305000)
+function getNum(id) {
+  const v = document.getElementById(id).value.replace(/\./g, '').replace(/,/g, '.');
+  return parseFloat(v) || 0;
+}
+
+const HOJE = new Date(2026, 5, 5); // 05/06/2026
+const CAIXA_MAX_MESES = 966; // 80 anos e 6 meses em meses
+
+function setReductor(v) {
+  comReductor = v;
+  document.getElementById('btnCom').className = 'tgl-btn' + (v ? ' on' : '');
+  document.getElementById('btnSem').className = 'tgl-btn' + (!v ? ' on' : '');
+  atualizar();
+}
+
+function onSlider() {
+  prazoDesejado = parseInt(document.getElementById('prazoSlider').value);
+  document.getElementById('prazoSliderLbl').textContent = meses2str(prazoDesejado);
+  atualizar();
+}
+
+function moeda(v) {
+  return 'R$ ' + (isNaN(v) ? '0,00' : v.toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2}));
+}
+
+function meses2str(m) {
+  m = Math.round(m);
+  const a = Math.floor(m / 12);
+  const mes = m % 12;
+  if (a === 0) return mes + ' mes' + (mes !== 1 ? 'es' : '');
+  if (mes === 0) return a + ' ano' + (a !== 1 ? 's' : '');
+  return a + ' ano' + (a !== 1 ? 's' : '') + ' e ' + mes + ' mes' + (mes !== 1 ? 'es' : '');
+}
+
+function calcIdade(dob) {
+  if (!dob) return null;
+  const [y, m, d] = dob.split('-').map(Number);
+  const nasc = new Date(y, m - 1, d);
+  let totalMeses = (HOJE.getFullYear() - nasc.getFullYear()) * 12 + (HOJE.getMonth() - nasc.getMonth());
+  if (HOJE.getDate() < nasc.getDate()) totalMeses--;
+  if (totalMeses < 0) return null;
+  return {anos: Math.floor(totalMeses/12), meses: totalMeses%12, totalMeses};
+}
+
+function getTaxa(renda) {
+  if (renda <= 2160)  return {com:4.33, sem:4.85};
+  if (renda <= 2850)  return {com:4.59, sem:5.11};
+  if (renda <= 3200)  return {com:4.85, sem:5.37};
+  if (renda <= 3500)  return {com:5.11, sem:5.64};
+  if (renda <= 4000)  return {com:5.64, sem:6.16};
+  if (renda <= 5000)  return {com:6.69, sem:7.22};
+  if (renda <= 9600)  return {com:7.93, sem:8.47};
+  if (renda <= 13000) return {com:10.47, sem:10.47};
+  return null;
+}
+
+function detectFaixa(renda, valorImovel) {
+  const LIMITES = {1:275000, 2:275000, 3:400000, 4:600000};
+  let fnum;
+  if (renda <= 3200)       fnum = 1;
+  else if (renda <= 5000)  fnum = 2;
+  else if (renda <= 9600)  fnum = 3;
+  else if (renda <= 13000) fnum = 4;
+  else fnum = 0;
+
+  const SBPE = {num:'SBPE', lbl:'SBPE / SFH', cls:'fxs', ltv:.80, prazoBase:360, minEnt:.20, taxa:{com:11.19,sem:11.19}, limImovel:Infinity, subsidio:false};
+
+  if (!fnum) return SBPE;
+  if (valorImovel > 0 && valorImovel > LIMITES[fnum]) return SBPE;
+
+  const taxa = getTaxa(renda);
+  const cls = ['','fx1','fx2','fx3','fx4'][fnum];
+  const ltv = fnum <= 3 ? .90 : .80;
+  const prazoBase = fnum <= 3 ? 420 : 360;
+  const minEnt = fnum <= 3 ? .10 : .20;
+
+  return {
+    num: fnum,
+    lbl: `Faixa ${fnum} — Imóvel até ${moeda(LIMITES[fnum])}`,
+    cls, ltv, prazoBase, minEnt, taxa,
+    limImovel: LIMITES[fnum],
+    subsidio: fnum <= 2
+  };
+}
+
+function atualizar() {
+  const renda = getNum('renda');
+  const dob = document.getElementById('dob').value;
+  const valorImovel = getNum('valorImovel');
+  const entrada = getNum('entradaPropria');
+  const fgts = getNum('fgts');
+
+  const avaliacaoInput = getNum('valorAvaliacao');
+  const avaliacao = avaliacaoInput > 0 ? avaliacaoInput : valorImovel * 1.10;
+  const avaliacaoEstimada = avaliacaoInput <= 0;
+
+  const idade = calcIdade(dob);
+  const faixa = renda > 0 ? detectFaixa(renda, valorImovel) : null;
+  const LTV = faixa ? faixa.ltv : 0.80;
+
+  // Limitante 1: LTV — banco financia até X% da avaliação, sem passar do preço de venda
+  const maxPeloLTV = valorImovel > 0 ? Math.min(avaliacao * LTV, valorImovel) : 0;
+
+  // Limitante 2: Renda — usa sempre o PRAZO MÁXIMO da faixa (considerando idade)
+  // O prazo desejado afeta a parcela, não o quanto o banco aprova
+  let maxPelaRenda = Infinity;
+  let prazoMaxRenda = 420;
+  if (renda > 0 && faixa) {
+    const taxaCalc = comReductor ? faixa.taxa.com : faixa.taxa.sem;
+    const iMCalc = taxaCalc / 100 / 12;
+    const margem = renda * 0.30;
+    // Prazo máximo: menor entre o teto da faixa e o limite por idade
+    prazoMaxRenda = faixa.prazoBase;
+    if (idade) prazoMaxRenda = Math.min(prazoMaxRenda, Math.max(12, CAIXA_MAX_MESES - idade.totalMeses));
+    maxPelaRenda = margem / (1 / prazoMaxRenda + iMCalc);
+  }
+
+  // Banco aprova o menor dos dois
+  const maxBanco = Math.min(maxPeloLTV, maxPelaRenda);
+  const limitadoPorRenda = maxPelaRenda < maxPeloLTV;
+  const minEntrada = Math.max(0, valorImovel - maxBanco);
+
+  // Truque Cury só funciona se os DOIS limitantes permitem cobrir o preço inteiro
+  const curyTrick = valorImovel > 0
+    && (avaliacao * LTV) >= (valorImovel - 0.01)
+    && maxPelaRenda >= (valorImovel - 0.01);
+
+  // --- FAIXA BADGE ---
+  const fxInfo = document.getElementById('fxInfo');
+  if (renda > 0 && faixa) {
+    fxInfo.classList.remove('hidden');
+    const badge = document.getElementById('fxBadge');
+    badge.className = 'fx-badge ' + faixa.cls;
+    badge.textContent = faixa.lbl;
+
+    const idadeEl = document.getElementById('fxIdade');
+    if (idade) {
+      idadeEl.textContent = `${idade.anos} anos e ${idade.meses} meses`;
+    } else {
+      idadeEl.textContent = '';
+    }
+
+    const tInfo = document.getElementById('fxTaxaInfo');
+    const t = faixa.taxa;
+    if (t.com === t.sem) {
+      tInfo.innerHTML = `Taxa nominal (com redutor): <b>${t.com.toFixed(2)}% a.a.</b> | Taxa efetiva (sem redutor): <b>${t.sem.toFixed(2)}% a.a.</b>`;
+    } else {
+      tInfo.innerHTML = `Taxa nominal (com redutor): <b>${t.com.toFixed(2)}% a.a.</b> | Taxa efetiva (sem redutor): <b>${t.sem.toFixed(2)}% a.a.</b>`;
+    }
+  } else {
+    fxInfo.classList.add('hidden');
+  }
+
+  // --- BANCO FINANCIA ATÉ (baseado em avaliação × LTV) ---
+  const totalEntrada = entrada + fgts;
+  // Valor que realmente será financiado (respeitando maxBanco e o que o cliente coloca de entrada)
+  const vf = valorImovel > 0 ? Math.min(maxBanco, Math.max(0, valorImovel - totalEntrada)) : 0;
+
+  const vfEl = document.getElementById('vfVal');
+  const vfPctEl = document.getElementById('vfPct');
+  if (valorImovel > 0) {
+    vfEl.textContent = moeda(maxBanco);
+    const pctSobrePreco = Math.min((maxBanco / valorImovel) * 100, 100).toFixed(0);
+    if (curyTrick) {
+      vfEl.style.color = 'var(--green)';
+      vfPctEl.textContent = `100% do preço ✓ (LTV ok + renda ok)`;
+      vfPctEl.style.color = 'var(--green)';
+    } else if (limitadoPorRenda) {
+      vfEl.style.color = 'var(--orange)';
+      vfPctEl.textContent = `${pctSobrePreco}% do preço · limitado pela renda`;
+      vfPctEl.style.color = 'var(--orange)';
+    } else {
+      vfEl.style.color = 'var(--blue)';
+      vfPctEl.textContent = `${pctSobrePreco}% do preço (${Math.round(LTV*100)}% da avaliação)`;
+      vfPctEl.style.color = 'var(--sub)';
+    }
+  } else {
+    vfEl.textContent = '—';
+    vfEl.style.color = 'var(--blue)';
+    vfPctEl.textContent = '';
+  }
+  document.getElementById('totalEntradaVal').textContent = moeda(totalEntrada);
+
+  // --- ENTRY SUMMARY ---
+  const esSec = document.getElementById('entrySummary');
+  if (valorImovel > 0) {
+    esSec.classList.remove('hidden');
+    const fgtsParaEntrada = Math.min(fgts, minEntrada);
+    const entradaBolso = Math.max(0, minEntrada - fgtsParaEntrada);
+    const avalLabel = avaliacaoEstimada ? `estimada (+10%)` : `informada`;
+
+    let resumoEntrada = '';
+    if (curyTrick) {
+      resumoEntrada = `<div class="fin" style="color:var(--green)">🎉 Banco cobre 100% do preço — entrada zero!</div>
+        <div style="font-size:12px;color:var(--sub);margin-top:4px">
+          Avaliação ${avalLabel}: <b style="color:var(--txt)">${moeda(avaliacao)}</b> × LTV ${Math.round(LTV*100)}% = <b style="color:var(--green)">${moeda(avaliacao*LTV)}</b> ≥ Preço ${moeda(valorImovel)}<br>
+          Renda: margem de <b style="color:var(--txt)">${moeda(renda*0.30)}/mês</b> suporta até <b style="color:var(--green)">${moeda(maxPelaRenda)}</b> ✓
+        </div>`;
+    } else {
+      const fgtsStr = fgts > 0 ? ` | FGTS cobre ${moeda(fgtsParaEntrada)}` : '';
+      const bolsoStr = entradaBolso > 0
+        ? `Falta de bolso: <b style="color:var(--orange)">${moeda(entradaBolso)}</b>`
+        : `<b style="color:var(--green)">FGTS cobre a entrada completa!</b>`;
+      const limitanteStr = limitadoPorRenda
+        ? `<div style="font-size:12px;color:var(--orange);margin-top:5px">⚠ Limitado pela renda — máx. pela renda: <b>${moeda(maxPelaRenda)}</b> · máx. pelo LTV: ${moeda(maxPeloLTV)}</div>`
+        : `<div style="font-size:11px;color:var(--sub);margin-top:4px">Avaliação ${avalLabel}: ${moeda(avaliacao)} · LTV ${Math.round(LTV*100)}%</div>`;
+      resumoEntrada = `
+        Banco financia: <b>${moeda(maxBanco)}</b>${limitadoPorRenda ? ' <span style="color:var(--orange)">(limitado pela renda)</span>' : ''}<br>
+        Entrada mínima: <b>${moeda(minEntrada)}</b>${fgtsStr}<br>
+        ${bolsoStr}
+        <div class="fin">Valor a financiar: <span>${moeda(vf)}</span></div>
+        ${limitanteStr}`;
+    }
+    esSec.innerHTML = resumoEntrada;
+  } else {
+    esSec.classList.add('hidden');
+  }
+
+  // --- IMÓVEL ALERTS ---
+  const alerts = document.getElementById('imovelAlerts');
+  alerts.innerHTML = '';
+  if (valorImovel > 0 && faixa) {
+    const faixaLabel = faixa.num === 'SBPE' ? 'SBPE/SFH' : `Faixa ${faixa.num}`;
+
+    // Cury trick: LTV E renda permitem cobrir o preço inteiro
+    if (curyTrick) {
+      const pctAcima = (((avaliacao / valorImovel) - 1) * 100).toFixed(0);
+      alerts.innerHTML += `<div class="al al-g">🏆 <div><b>Truque Cury!</b> A avaliação da Caixa (${moeda(avaliacao)}${avaliacaoEstimada ? ' estimada' : ''}) está ${pctAcima}% acima do preço.<br>${Math.round(LTV*100)}% de ${moeda(avaliacao)} = <b>${moeda(avaliacao*LTV)}</b> ≥ preço ${moeda(valorImovel)}<br>Renda suporta até <b>${moeda(maxPelaRenda)}</b> → <b>banco financia 100% — entrada zero!</b></div></div>`;
+    }
+
+    // Renda limitando o financiamento
+    if (limitadoPorRenda && valorImovel > 0) {
+      alerts.innerHTML += `<div class="al al-y">⚠ <div><b>Financiamento limitado pela renda.</b> Com margem de ${moeda(renda*0.30)}/mês (30% de ${moeda(renda)}) e prazo máximo de ${meses2str(prazoMaxRenda)}, o banco aprova no máximo <b>${moeda(maxPelaRenda)}</b>.<br>Pelo LTV seria ${moeda(maxPeloLTV)}, mas a renda não suporta.<br>Entrada mínima necessária: <b>${moeda(minEntrada)}</b>. Para aumentar, inclua renda do cônjuge.</div></div>`;
+    }
+
+    // Faixa limit OK
+    if (faixa.num !== 'SBPE') {
+      alerts.innerHTML += `<div class="al al-g">✓ Imóvel dentro do limite para Faixa ${faixa.num} (máx. ${moeda(faixa.limImovel)})</div>`;
+    }
+
+    // Entrada abaixo do mínimo por LTV
+    if (!curyTrick && totalEntrada < minEntrada - 0.01) {
+      alerts.innerHTML += `<div class="al al-y">⚠ Entrada insuficiente. Para financiar ${Math.round(LTV*100)}% da avaliação, a entrada mínima é <b>${moeda(minEntrada)}</b>. Com FGTS de ${moeda(fgts)}, ainda falta <b>${moeda(Math.max(0, minEntrada-fgts))}</b> de recursos próprios.</div>`;
+    }
+
+    // SBPE info
+    if (faixa.num === 'SBPE') {
+      alerts.innerHTML += `<div class="al al-b">ℹ️ Modalidade SBPE/SFH — taxa balcão mínima Caixa 2026: 11,19% a.a. + TR. LTV máximo: 80% da avaliação.</div>`;
+    }
+
+    // Subsídio
+    if (faixa.subsidio) {
+      alerts.innerHTML += `<div class="al al-b">🎁 Faixa ${faixa.num} pode ter subsídio do governo (desconto imobiliário), reduzindo o valor a financiar. Confirme na Caixa — pode chegar a R$ 55.000 em RJ.</div>`;
+    }
+  }
+
+  // --- PRAZO MÁXIMO ---
+  const slider = document.getElementById('prazoSlider');
+  let prazoMax = 420;
+  if (faixa) prazoMax = faixa.prazoBase;
+
+  let pmaxCaixa = CAIXA_MAX_MESES;
+  if (idade) {
+    pmaxCaixa = Math.max(12, CAIXA_MAX_MESES - idade.totalMeses);
+    document.getElementById('pmaxVal').textContent = meses2str(pmaxCaixa);
+    document.getElementById('pmaxSub').textContent =
+      `Idade: ${idade.anos} anos e ${idade.meses} meses | Limite Caixa: 80 anos e 6 meses na quitação`;
+  } else {
+    document.getElementById('pmaxVal').textContent = '—';
+    document.getElementById('pmaxSub').textContent = 'Informe a data de nascimento';
+  }
+
+  const prazoEfetivo = Math.min(prazoMax, pmaxCaixa);
+  slider.max = prazoEfetivo;
+
+  // Reseta para o máximo sempre que: primeira vez, faixa/DOB mudou (prazoEfetivo diferente), ou ultrapassou o limite
+  if (!prazoDesejado || prazoDesejado > prazoEfetivo || prazoEfetivo !== prevPrazoEfetivo) {
+    prazoDesejado = prazoEfetivo;
+    prevPrazoEfetivo = prazoEfetivo;
+  }
+  slider.value = prazoDesejado;
+  document.getElementById('prazoSliderLbl').textContent = prazoDesejado > 0 ? meses2str(prazoDesejado) : '—';
+
+  // --- TAXA APLICADA ---
+  const taxaBig = document.getElementById('taxaBigNum');
+  if (faixa) {
+    const taxa = comReductor ? faixa.taxa.com : faixa.taxa.sem;
+    taxaBig.textContent = taxa.toFixed(2).replace('.', ',') + ' %';
+  } else {
+    taxaBig.textContent = '—';
+  }
+
+  // --- CAPACIDADE PELA RENDA ---
+  const capBox = document.getElementById('capBox');
+  if (renda > 0 && faixa) {
+    const taxa = comReductor ? faixa.taxa.com : faixa.taxa.sem;
+    const iM = taxa / 100 / 12;
+    const margem = renda * 0.30;
+    capBox.style.display = 'block';
+
+    // Linha extra: impacto do prazo desejado vs prazo máximo
+    let prazoDesejRow = '';
+    if (prazoDesejado > 0 && prazoDesejado < prazoMaxRenda) {
+      const maxRendaPrazoDesej = margem / (1/prazoDesejado + iM);
+      prazoDesejRow = `<div class="cap-row"><span class="cap-key">Com prazo desejado (${meses2str(prazoDesejado)})</span><span class="cap-v cv-orange">${moeda(maxRendaPrazoDesej)}</span></div>`;
+    }
+
+    capBox.innerHTML = `
+      <div class="cap-lbl">Capacidade pela Renda (regra 30%)</div>
+      <div class="cap-row"><span class="cap-key">Margem mensal (30% da renda)</span><span class="cap-v cv-blue">${moeda(margem)}/mês</span></div>
+      <div class="cap-row"><span class="cap-key">Máx. financiável — prazo máximo (${meses2str(prazoMaxRenda)})</span><span class="cap-v cv-blue">${moeda(maxPelaRenda)}</span></div>
+      ${prazoDesejRow}
+    `;
+  } else {
+    capBox.style.display = 'none';
+  }
+}
+
+function switchTab(tab) {
+  tabAtual = tab;
+  document.getElementById('tabSAC').className = 'tab' + (tab==='SAC' ? ' on' : '');
+  document.getElementById('tabPRICE').className = 'tab' + (tab==='PRICE' ? ' on' : '');
+  document.getElementById('cSAC').className = 'tab-c' + (tab==='SAC' ? ' on' : '');
+  document.getElementById('cPRICE').className = 'tab-c' + (tab==='PRICE' ? ' on' : '');
+  if (simData) renderEvo(simData, tab);
+}
+
+function simular() {
+  const renda = getNum('renda');
+  const dob = document.getElementById('dob').value;
+  const valorImovel = getNum('valorImovel');
+  const entrada = getNum('entradaPropria');
+  const fgts = getNum('fgts');
+
+  if (!renda || !valorImovel) { alert('Preencha a Renda e o Valor do Imóvel.'); return; }
+
+  const faixa = detectFaixa(renda, valorImovel);
+  const idade = calcIdade(dob);
+  const taxa = comReductor ? faixa.taxa.com : faixa.taxa.sem;
+  const iM = taxa / 100 / 12;
+  const totalEntrada = entrada + fgts;
+
+  // Avaliação e LTV
+  const avaliacaoInputS = getNum('valorAvaliacao');
+  const avaliacao = avaliacaoInputS > 0 ? avaliacaoInputS : valorImovel * 1.10;
+  const LTV = faixa.ltv;
+  const maxBanco = Math.min(avaliacao * LTV, valorImovel);
+
+  // Valor efetivamente financiado: o que o banco oferece menos o que o cliente coloca
+  const P = Math.min(maxBanco, Math.max(0, valorImovel - totalEntrada));
+
+  if (P <= 0) { alert('Valor financiado é zero — a entrada cobre o valor total do imóvel.'); return; }
+
+  let prazoMax = faixa.prazoBase;
+  if (idade) prazoMax = Math.min(prazoMax, Math.max(12, CAIXA_MAX_MESES - idade.totalMeses));
+  const n = prazoDesejado > 0 ? Math.min(prazoDesejado, prazoMax) : prazoMax;
+
+  // SAC
+  const amortSAC = P / n;
+  const p1SAC = amortSAC + P * iM;
+  const pNSAC = amortSAC * (1 + iM);
+  const jurosSAC = P * iM * (n + 1) / 2;
+  const custoSAC = valorImovel + jurosSAC;
+
+  // PRICE
+  let pmtPRICE, jurosPRICE, custoPRICE;
+  if (iM > 0) {
+    pmtPRICE = P * iM / (1 - Math.pow(1 + iM, -n));
+  } else {
+    pmtPRICE = P / n;
+  }
+  jurosPRICE = pmtPRICE * n - P;
+  custoPRICE = valorImovel + jurosPRICE;
+
+  simData = {
+    renda, valorImovel, entrada, fgts, totalEntrada, P,
+    avaliacao, maxBanco, LTV,
+    faixa, taxa, iM, n,
+    amortSAC, p1SAC, pNSAC, jurosSAC, custoSAC,
+    pmtPRICE, jurosPRICE, custoPRICE
+  };
+
+  renderSAC(simData);
+  renderPRICE(simData);
+  renderEvo(simData, tabAtual);
+
+  document.getElementById('secResultado').classList.remove('hidden');
+  setTimeout(() => document.getElementById('secResultado').scrollIntoView({behavior:'smooth',block:'start'}), 80);
+}
+
+function buildResultGrid(d, tipo) {
+  const pmt1  = tipo === 'SAC' ? d.p1SAC   : d.pmtPRICE;
+  const pmtN  = tipo === 'SAC' ? d.pNSAC   : d.pmtPRICE;
+  const juros = tipo === 'SAC' ? d.jurosSAC : d.jurosPRICE;
+  const custo = tipo === 'SAC' ? d.custoSAC : d.custoPRICE;
+  const pct1  = (pmt1 / d.renda * 100).toFixed(1);
+  const pctN  = (pmtN / d.renda * 100).toFixed(1);
+  const pctFin = Math.min((d.P / d.valorImovel) * 100, 100).toFixed(0);
+  const ltvPct = Math.round(d.LTV * 100);
+
+  const parcelasRow = tipo === 'SAC'
+    ? `<div class="rc"><div class="rc-lbl">1ª parcela</div><div class="rc-val rv-blue">${moeda(d.p1SAC)}</div><div class="rc-sub">${pct1}% da renda</div></div>
+       <div class="rc"><div class="rc-lbl">Última parcela</div><div class="rc-val rv-green">${moeda(d.pNSAC)}</div><div class="rc-sub">${pctN}% da renda</div></div>`
+    : `<div class="rc span2" style="text-align:center"><div class="rc-lbl">Parcela fixa (PRICE)</div><div class="rc-val rv-blue" style="font-size:22px">${moeda(d.pmtPRICE)}</div><div class="rc-sub">${pct1}% da renda · todas as parcelas iguais</div></div>`;
+
+  return `<div class="rg">
+    <div class="rc"><div class="rc-lbl">Preço de venda</div><div class="rc-val">${moeda(d.valorImovel)}</div><div class="rc-sub">Avaliação Caixa: ${moeda(d.avaliacao)}</div></div>
+    <div class="rc"><div class="rc-lbl">Banco financia (${ltvPct}% aval.)</div><div class="rc-val rv-blue">${moeda(d.maxBanco)}</div><div class="rc-sub">${pctFin}% do preço de venda</div></div>
+    <div class="rc"><div class="rc-lbl">Entrada própria</div><div class="rc-val">${moeda(d.entrada)}</div></div>
+    <div class="rc"><div class="rc-lbl">FGTS utilizado</div><div class="rc-val">${moeda(d.fgts)}</div></div>
+    <div class="rc hl span4" style="text-align:center;padding:14px">
+      <div class="rc-lbl">Valor efetivamente financiado</div>
+      <div class="rc-val rv-blue rv-big">${moeda(d.P)}</div>
+    </div>
+    ${parcelasRow}
+    <div class="rc"><div class="rc-lbl">Taxa</div><div class="rc-val">${d.taxa.toFixed(2)}% a.a.</div><div class="rc-sub">${meses2str(d.n)}</div></div>
+    <div class="rc"><div class="rc-lbl">Total de juros</div><div class="rc-val rv-orange">${moeda(juros)}</div></div>
+    <div class="rc span4" style="padding:14px 16px;text-align:center">
+      <div class="rc-lbl">Custo total (imóvel + juros)</div>
+      <div class="rc-val rv-red rv-big">${moeda(custo)}</div>
+      <div class="rc-sub">Entrada ${moeda(d.totalEntrada)} + Parcelas ${moeda(d.P + juros)}</div>
+    </div>
+  </div>`;
+}
+
+function renderSAC(d) {
+  document.getElementById('cSAC').innerHTML = buildResultGrid(d, 'SAC');
+}
+
+function renderPRICE(d) {
+  document.getElementById('cPRICE').innerHTML = buildResultGrid(d, 'PRICE');
+}
+
+function renderEvo(d, tipo) {
+  const totalJ = tipo === 'SAC' ? d.jurosSAC : d.jurosPRICE;
+  const pctA = (d.P / (d.P + totalJ) * 100).toFixed(1);
+  const pctJ = (totalJ / (d.P + totalJ) * 100).toFixed(1);
+
+  let rows = '';
+  let saldo = d.P;
+
+  if (tipo === 'SAC') {
+    const am = d.amortSAC;
+    for (let k = 1; k <= d.n; k++) {
+      const j = saldo * d.iM;
+      const parc = am + j;
+      saldo -= am;
+      rows += `<tr><td>${k}</td><td>${moeda(parc)}</td><td class="td-a">${moeda(am)}</td><td class="td-j">${moeda(j)}</td></tr>`;
+    }
+  } else {
+    const pmt = d.pmtPRICE;
+    for (let k = 1; k <= d.n; k++) {
+      const j = saldo * d.iM;
+      const am = pmt - j;
+      saldo -= am;
+      rows += `<tr><td>${k}</td><td>${moeda(pmt)}</td><td class="td-a">${moeda(am)}</td><td class="td-j">${moeda(j)}</td></tr>`;
+    }
+  }
+
+  document.getElementById('evoBody').innerHTML = `
+    <div class="evo-bar-legend">
+      <div class="evo-li"><div class="evo-dot" style="background:var(--blue2)"></div>Amortização ${pctA}%</div>
+      <div class="evo-li"><div class="evo-dot" style="background:var(--orange)"></div>Juros ${pctJ}%</div>
+    </div>
+    <div class="evo-track" style="margin-bottom:16px">
+      <div class="evo-amort" style="width:${pctA}%"></div>
+      <div class="evo-juros" style="width:${pctJ}%"></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Mês</th><th>Parcela</th><th>Amortização</th><th>Juros</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="disc">
+      <span>⚠</span>
+      <span>Simulação estimada com base nas taxas MCMV 2026 (vigência abr/2026). Consulte uma agência Caixa Econômica Federal para proposta oficial. Seguros habitacionais (MIP/DFI) não incluídos neste cálculo.</span>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
