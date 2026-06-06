@@ -345,6 +345,7 @@ tr:hover td{background:var(--card2)}
             <div class="inp-w has-pfx"><span class="pfx">R$</span>
               <input type="text" inputmode="numeric" id="reforcoAnual" placeholder="5.000" oninput="fmtInput(this);atualizar()">
             </div>
+            <div id="hintReforco" style="font-size:10.5px;color:var(--sub);margin-top:4px"></div>
           </div>
           <div>
             <label>Quantidade de reforços</label>
@@ -365,6 +366,7 @@ tr:hover td{background:var(--card2)}
             <div class="inp-w has-pfx"><span class="pfx">R$</span>
               <input type="text" inputmode="numeric" id="parcelaMensalObra" placeholder="deixe vazio para calcular" oninput="fmtInput(this);atualizar()">
             </div>
+            <div id="hintParcelaMensal" style="font-size:10.5px;color:var(--sub);margin-top:4px"></div>
           </div>
           <div>
             <button onclick="sugerirParcela()" style="margin-top:16px;width:100%;padding:10px 8px;background:var(--card3);border:1px solid var(--borda);border-radius:8px;color:var(--blue);font-weight:700;cursor:pointer;font-size:12px;font-family:inherit;line-height:1.3">
@@ -455,6 +457,7 @@ let tabAtual = 'SAC';
 let prevPrazoEfetivo = 0;
 let obraAtiva = false;
 let _minEntrada = 0; // entrada total necessária — atualizada em atualizar()
+let _renda = 0;      // renda bruta — atualizada em atualizar()
 
 function setObra(v) {
   obraAtiva = v;
@@ -491,10 +494,20 @@ function sugerirParcela() {
   const totalReforcos = reforcoAnual * numReforcos;
   // Saldo = total necessário - ato já pago - FGTS na entrega - reforços anuais
   const saldoMensais = Math.max(0, _minEntrada - ato - fgts - totalReforcos);
-  const parcelaSugerida = prazoObra > 0 ? Math.ceil(saldoMensais / prazoObra) : 0;
+  const parcelaBruta = prazoObra > 0 ? Math.ceil(saldoMensais / prazoObra) : 0;
+
+  // Respeita o limite de 30% da renda
+  const maxPermitido = Math.floor(_renda * 0.30);
+  const parcelaSugerida = Math.min(parcelaBruta, maxPermitido);
 
   const el = document.getElementById('parcelaMensalObra');
   el.value = parcelaSugerida > 0 ? parcelaSugerida.toLocaleString('pt-BR') : '0';
+
+  if (parcelaBruta > maxPermitido && parcelaBruta > 0) {
+    const naoCobre = saldoMensais - (parcelaSugerida * prazoObra);
+    alert(`A parcela ideal seria ${moeda(parcelaBruta)}/mês, mas o limite é ${moeda(maxPermitido)}/mês (30% da renda).\n\nCom ${moeda(parcelaSugerida)}/mês × ${prazoObra} meses, ficam ${moeda(Math.max(0, naoCobre))} descobertos.\n\nSugestão: aumente o ato ou os reforços anuais para cobrir o saldo.`);
+  }
+
   atualizar();
 }
 
@@ -597,6 +610,8 @@ function atualizar() {
   const valorImovel = getNum('valorImovel');
   const entrada = getNum('entradaPropria');
   const fgts = getNum('fgts');
+
+  _renda = renda; // salva globalmente para obra
 
   const avaliacaoInput = getNum('valorAvaliacao');
   const avaliacao = avaliacaoInput > 0 ? avaliacaoInput : valorImovel * 1.10;
@@ -852,6 +867,22 @@ function atualizar() {
     const totalObra = totalMensais + totalReforcos;
     const saldoEntrega = Math.max(0, entrada - totalObra);
 
+    // Limites Caixa para obra
+    const maxParcelaMensalObra = renda * 0.30;
+    const maxReforcoAnualObra = renda; // máx = 1 renda mensal
+
+    // Atualiza hints nos campos
+    const hintP = document.getElementById('hintParcelaMensal');
+    const hintR = document.getElementById('hintReforco');
+    if (hintP) {
+      hintP.textContent = renda > 0 ? `Máx: ${moeda(maxParcelaMensalObra)}/mês (30% da renda)` : '';
+      hintP.style.color = (parcelaMensalObra > maxParcelaMensalObra && parcelaMensalObra > 0) ? 'var(--red)' : 'var(--sub)';
+    }
+    if (hintR) {
+      hintR.textContent = renda > 0 ? `Máx: ${moeda(maxReforcoAnualObra)}/ano (1 renda mensal)` : '';
+      hintR.style.color = (reforcoAnual > maxReforcoAnualObra && reforcoAnual > 0) ? 'var(--red)' : 'var(--sub)';
+    }
+
     document.getElementById('totalReforcosVal').textContent = reforcoAnual > 0 ? moeda(totalReforcos) : '—';
 
     const resumoEl = document.getElementById('obraResumo');
@@ -866,6 +897,13 @@ function atualizar() {
         ? `<div style="color:var(--green);font-weight:700;margin-top:6px">✓ Entrada totalmente coberta (${moeda(totalCoberto)} de ${moeda(entradaNecessaria)} necessários)</div>`
         : `<div class="al al-y" style="margin-top:8px">⚠ Faltam <b>${moeda(faltando)}</b> para cobrir a entrada total necessária (${moeda(entradaNecessaria)}). Aumente o ato, FGTS, anuais ou mensais.</div>`;
 
+      const alertParcelaMensal = parcelaMensalObra > maxParcelaMensalObra && parcelaMensalObra > 0
+        ? `<div class="al al-r" style="margin-top:6px">⚠ Parcela mensal (${moeda(parcelaMensalObra)}) excede 30% da renda bruta. Máx permitido: <b>${moeda(maxParcelaMensalObra)}/mês</b>.</div>`
+        : '';
+      const alertReforcoAnual = reforcoAnual > maxReforcoAnualObra && reforcoAnual > 0
+        ? `<div class="al al-r" style="margin-top:6px">⚠ Reforço anual (${moeda(reforcoAnual)}) excede a renda mensal. Máx permitido: <b>${moeda(maxReforcoAnualObra)}/ano</b> (1 renda mensal).</div>`
+        : '';
+
       resumoEl.innerHTML = `<div class="entry-summary">
         <b>Distribuição da entrada (${moeda(entradaNecessaria)} necessários):</b><br>
         Ato (assinatura): <b>${moeda(entrada)}</b><br>
@@ -874,6 +912,8 @@ function atualizar() {
         ${parcelaMensalObra > 0 ? `Mensais: ${moeda(parcelaMensalObra)} × ${prazoObra} meses = <b>${moeda(totalMensais)}</b><br>` : '<span style="color:var(--sub)">Mensais: — (use o botão para calcular)</span><br>'}
         <div class="fin" style="margin-top:6px">Total coberto na obra+entrega: <span>${moeda(totalCoberto)}</span></div>
         ${statusHtml}
+        ${alertParcelaMensal}
+        ${alertReforcoAnual}
       </div>`;
     } else {
       resumoEl.innerHTML = '';
