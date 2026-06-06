@@ -469,16 +469,16 @@ function detectFaixa(renda, valorImovel) {
   else if (renda <= 13000) fnum = 4;
   else fnum = 0;
 
-  const SBPE = {num:'SBPE', lbl:'SBPE / SFH', cls:'fxs', ltv:.80, prazoBase:360, minEnt:.20, taxa:{com:11.19,sem:11.19}, limImovel:Infinity, subsidio:false};
+  const SBPE = {num:'SBPE', lbl:'SBPE / SFH', cls:'fxs', ltv:.90, prazoBase:360, minEnt:.10, taxa:{com:11.19,sem:11.19}, limImovel:Infinity, subsidio:false};
 
   if (!fnum) return SBPE;
   if (valorImovel > 0 && valorImovel > LIMITES[fnum]) return SBPE;
 
   const taxa = getTaxa(renda);
   const cls = ['','fx1','fx2','fx3','fx4'][fnum];
-  const ltv = .90;                          // todas as faixas MCMV: 90%
+  const ltv = .80;                          // todas as faixas MCMV: 80%
   const prazoBase = fnum <= 3 ? 420 : 360; // Faixas 1-3: 420 meses | Faixa 4: 360 meses
-  const minEnt = .10;                       // entrada mínima MCMV: 10%
+  const minEnt = .20;                       // entrada mínima MCMV: 20%
 
   return {
     num: fnum,
