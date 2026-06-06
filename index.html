@@ -476,9 +476,9 @@ function detectFaixa(renda, valorImovel) {
 
   const taxa = getTaxa(renda);
   const cls = ['','fx1','fx2','fx3','fx4'][fnum];
-  const ltv = fnum <= 3 ? .90 : .80;
-  const prazoBase = fnum <= 3 ? 420 : 360;
-  const minEnt = fnum <= 3 ? .10 : .20;
+  const ltv = .90;                          // todas as faixas MCMV: 90%
+  const prazoBase = fnum <= 3 ? 420 : 360; // Faixas 1-3: 420 meses | Faixa 4: 360 meses
+  const minEnt = .10;                       // entrada mínima MCMV: 10%
 
   return {
     num: fnum,
